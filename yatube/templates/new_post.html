@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %} Добавить запись {% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 p-5">
+        <div class="card">
+            <div class="card-header">Создайте новый пост</div>
+            <div class="card-body"></div>
+
+                <form method="post" action="#"> {# action="{% url 'index' %}"> #}{# action отравляет данные из формы на страницу index#}
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                        <div class="form-group row" aria-required={% if field.required %}"true"{% else %}"false"{% endif %}>
+                                <label for="{{ field.id_for_label }}" class="col-md-4 col-form-label text-md-right">{{ field.label }}</label>
+                                <div class="col-md-6"> 
+                                    {{ field }}
+                                </div>
+                        </div>
+                    {% endfor %}
+
+                    <div class="col-md-6 offset-md-4">              
+                        <button type="submit" class="btn btn-primary">
+                            Добавить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div> 
+    </div>   
+</div>
+{% endblock %}
