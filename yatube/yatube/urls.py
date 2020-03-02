@@ -18,24 +18,18 @@ from django.urls import include, path
 from django.contrib.flatpages import views
 
 urlpatterns = [
-    # импорт правил из приложения posts, обработчик для главной страницы 
-    path("", include("posts.urls")), 
-    # flatpages
-    path("about/", include("django.contrib.flatpages.urls")),
-    # импорт правил из приложения admin
-    path("admintest/", admin.site.urls),
-    # регистрация и авторизация
-    path("auth/", include("users.urls")),
+    path('admin/', admin.site.urls), # импорт правил из приложения admin
+    # если нужного шаблона для /auth не нашлось в файле users.urls — ищем совпадения в файле django.contrib.auth.urls
+    path('auth/', include('users.urls')),
     # если нужного шаблона для /auth не нашлось в файле users.urls — 
     # ищем совпадения в файле django.contrib.auth.urls
-    path("auth/", include("django.contrib.auth.urls")),
+    path('auth/', include('django.contrib.auth.urls')), # регистрация и авторизация
+    path('about-author/', views.flatpage, {'url': '/about-author/'}, name='about-author'), 
+    path('about-spec/', views.flatpage, {'url': '/about-spec/'}, name='spec'),
+    path('about-us/', views.flatpage, {'url': '/about-us/'}, name='about'), 
+    path('terms/', views.flatpage, {'url': '/terms/'}, name='terms'),
+    path('', include('posts.urls')), # импорт правил из приложения posts, обработчик для главной страницы 
 ]
 # в urls.py главного файла будут только ссылки на urls.py приложений проекта
-urlpatterns += [
-        path('about-us/', views.flatpage, {'url': '/about-us/'}, name='about'),
-        path('terms/', views.flatpage, {'url': '/terms/'}, name='terms'),
-        path('about-author/', views.flatpage, {'url': "about-author/"}, name="about-author"),
-        path('about-spec/', views.flatpage,  {'url': "about-spec/"}, name="about-spec")
-]
 # Теперь страницы с адресами /about-us и /terms будут обрабатываться view-функцией flatpage() приложения flatpages.
 # {'url': '/about-us/'} и {'url': '/license/'} — это параметры, которые path() передаёт в вызываемую view-функцию. Это даёт нам свободу: например, мы можем обработать URL

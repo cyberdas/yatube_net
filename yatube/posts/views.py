@@ -5,6 +5,8 @@ from .models import Post, Group, User
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 import datetime as dt
+from django.urls import reverse
+from django.utils import timezone
 
 def index(request):
     post_list = Post.objects.order_by("-pub_date").all()
@@ -27,7 +29,7 @@ def new_post(request):
             post = form.save(commit=False)  # принимаем данные от формы
             post.author = request.user
             post.save()
-            return redirect('index')
+            return redirect(reverse('index'))
         return render(request, 'new_post.html', {'form': form}) 
     form = PostForm()            
     return render(request, "new_post.html", {"form": form})
@@ -38,7 +40,7 @@ def new_post(request):
 
 def profile(request, username):
     profile = get_object_or_404(User, username=username) # получаем объект User и колонку, из которой выбираем данные
-    posts = Post.objects.filter(author=profile) # все посты одного автора по ключу\
+    posts = Post.objects.filter(author=profile).order_by("-pub_date") # все посты одного автора по ключу\
     my_posts = Post.objects.filter(author=profile).count()
     paginator  = Paginator(posts, 10)
     page_number = request.GET.get('page')
@@ -47,8 +49,10 @@ def profile(request, username):
 
 
 def post_view(request, username, post_id):
-    post = get_object_or_404(Post, pk=post_id) # функция get_object_or_404 получает по заданным критериям объект из базы данных или возвращант сообщение об ошибке, если объект не найден 
-    return render(request, "post.html", {"post": post})
+    post = get_object_or_404(Post, pk=post_id) # функция get_object_or_404 получает по заданным критериям объект из базы данных или возвращант сообщение об ошибке, если объект не найден \
+    profile = get_object_or_404(User, username=username)
+    my_posts = Post.objects.filter(author=profile).count()
+    return render(request, "post.html", {"post": post, "my_posts": my_posts})
 
 
 @login_required
@@ -60,7 +64,7 @@ def post_edit(request, username, post_id):
             if form.is_valid(): 
                 post = form.save(commit=False)
                 post.author = request.user
-                post.pub_date = dt.datetime.now()
+                post.pub_date = timezone.now()
                 post.save()
                 return redirect('index')
             return render(request, 'post_edit.html', {'form': form})
