@@ -55,7 +55,7 @@ def post_view(request, username, post_id):
     post = get_object_or_404(Post, pk=post_id) # функция get_object_or_404 получает по заданным критериям объект из базы данных или возвращант сообщение об ошибке, если объект не найден \
     profile = get_object_or_404(User, username=username)
     my_posts = Post.objects.filter(author=profile).count()
-    return render(request, "post.html", {"post": post, "my_posts": my_posts})
+    return render(request, "post.html", {"post": post, "my_posts": my_posts, "profile": profile})
 
 
 @login_required
