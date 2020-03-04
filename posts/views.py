@@ -72,5 +72,5 @@ def post_edit(request, username, post_id):
                 return redirect ('post', username=request.user.username, post_id=post_id)
             return render(request, 'post_edit.html', {'form': form})
         form = PostForm(instance=post) # Когда мы только зашли на страницу и хотим получить пустую форму
-        return render(request, "post_edit.html", {"form": form})
+        return render(request, "post_edit.html", {"form": form, "post": post})
     return redirect("post", post_id=post_id, username=post.author.username)
