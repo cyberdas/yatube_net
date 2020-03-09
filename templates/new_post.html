@@ -7,7 +7,7 @@
             <div class="card-header">Создайте новый пост</div>
             <div class="card-body"></div>
 
-                <form method="post"> {# action="{% url 'index' %}"> #}{# action отравляет данные из формы на страницу index#}
+                <form method="post" enctype="multipart/form-data"> {# action="{% url 'index' %}"> #}{# action отравляет данные из формы на страницу index#}
                     {% csrf_token %}
 
                     {% for field in form %}

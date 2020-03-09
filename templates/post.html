@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %} {% endblock %}
+{% block title %} {{profile.get_full_name}} - Статья {{post.id}} {% endblock %}
 {% block content %}
 
 <main role="main" class="container">
-    <div class="row">
+        <div class="row">
             <div class="col-md-3 mb-3 mt-1">
                 <div class="card">
                         <div class="card-body">
@@ -35,28 +35,13 @@
 
         <div class="col-md-9">
 
-            <!-- Пост -->  
-                <div class="card mb-3 mt-1 shadow-sm">
-                        <div class="card-body">
-                                <p class="card-text">
-                                        <!-- Ссылка на страницу автора в атрибуте href; username автора в тексте ссылки -->
-                                        <a href="/{{post.author}}/"><strong class="d-block text-gray-dark">@{{post.author}}</strong></a>
-                                        <!-- Текст поста -->
-                                        {{ post.text }}
-                                </p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                        <div class="btn-group ">
-                                                <!-- Ссылка на редактирование, показывается только автору записи -->
-                                                {% if post.author == request.user %}
-                                                <a class="btn btn-sm text-muted" href="{% url 'post_edit' post_id=post.id username=post.author %}" role="button">Редактировать</a>
-                                                {% endif %}
-                                        </div>
-                                        <!-- Дата публикации  -->
-                                        <small class="text-muted">{{post.pub_date}}</small>
-                                </div>
-                        </div>
-                </div>
-     </div>
+            <!-- Пост -->
+            <!-- Вот он, новый include! -->
+                {% include "post_item.html" with post=post %}
+
+        
+                {% include 'comments.html' %}
+        </div>
     </div>
 </main>
 {% endblock %}

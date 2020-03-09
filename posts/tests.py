@@ -1,7 +1,8 @@
 from django.test import TestCase, Client
 from django.core import mail
-from .models import Post, User
+from .models import Post, User, Group
 from django.urls import reverse
+import time
 # После регистрации пользователя создается его персональная страница (profile)
 # Авторизованный пользователь может опубликовать пост (new)
 # Неавторизованный посетитель не может опубликовать пост (его редиректит на страницу входа)
@@ -19,10 +20,6 @@ class ProjectTest(TestCase):
         ) # регистрация
         self.assertRedirects(response, "/auth/login/", status_code=302, target_status_code=200)
         response = self.client.post("auth/login/", {"username": "testemail", "password": "Test123456"}, follow=True)
-
-    def test_profile(self):
-        response = self.client.get("/testemail/")
-        self.assertEqual(response.status_code, 200)
 
     def test_logout(self): # неавторизованный пользователь не может опубликовать пост
         self.client.logout()
@@ -43,11 +40,30 @@ class ProjectTest(TestCase):
         self.client.login(username="testemail", password="Test123456")
         self.user = User.objects.get(username='testemail')
         self.post = Post.objects.create(text="New text", author=self.user)
-        self.client.post(f"/{self.user.username}/{self.post.pk}/edit", {"text": "Измененный текст"})
+        self.client.post(f"/{self.user.username}/{self.post.pk}/edit/", {"text": "Измененный текст"})
         test_urls = ("/", f'/{self.user.username}/', f'/{self.user.username}/{self.post.pk}/')
         for url in test_urls:
-            response = response = self.client.get(url)
+            response = self.client.get(url)
             self.assertContains(response, "Измененный текст", count=1)
+
+    def test_image(self):
+        # проверяют страницу конкретной записи с картинкой: на странице есть тег <img>
+        # проверяют, что на главной странице, на странице профайла и на странице группы пост с картинкой отображается корректно, с тегом <img>
+        # проверяют, что срабатывает защита от загрузки файлов не-графических форматов
+        self.client.login(username="testemail", password="Test123456")
+        self.user = User.objects.get(username='testemail')
+        self.group = Group.objects.create(title="TestGroup", slug="testimage", description='desc')
+        with open('C:/Users/1/Desktop/python/проекты_черновые/final_project/media/posts/image.jpg', 'rb') as fp:
+            self.client.post("/new/", {"group": "1", 'text': 'Test post', 'image': fp})
+        urls = ["/", f"/{self.user.username}/", f'/{self.user.username}/1/', '/group/testimage/']
+        for url in urls:
+            response = self.client.get(url)
+            self.assertContains(response, '<img')
+
+        with open('C:/Users/1/Desktop/python/Команднаястрока.rtf', 'rb') as fp:
+            self.client.post('/new/', {'group': '1','text': 'Test post', 'image': fp})
+        response = self.client.get("/testemail/")
+        self.assertEqual(response.context["my_posts"], 2) # создается только 1 пост
 
 class EmailTest(TestCase):
     def setUp(self):
@@ -58,3 +74,24 @@ class EmailTest(TestCase):
     def test_send_email(self): 
         self.assertEqual(len(mail.outbox), 1) # Проверяем, что письмо лежит в исходящих
         self.assertEqual(mail.outbox[0].subject, 'Подтверждение регистрации Yatube') # Проверяем, что тема первого письма правильная.
+
+class ServerTest(ProjectTest):
+
+    def test_error_404(self):
+        response = self.client.get('/404/')
+        self.assertEqual(response.status_code, 404)
+
+class CacheTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username="TestUser", email="mail@mail.ru", password="Zxc123")
+        self.client.login(username='TestUser', password='Zxc123')
+    
+    def test_cache_index(self):
+        self.client.get("/") # создается cached_page
+        self.post = Post.objects.create(text="Test post", author=self.user) # новый пост
+        response = self.client.get("/") # без нового поста
+        self.assertNotContains(response, "Test post")
+        time.sleep(20)
+        response = self.client.get("/")
+        self.assertContains(response, "Test post")
