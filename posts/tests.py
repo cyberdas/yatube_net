@@ -1,8 +1,8 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.core import mail
-from .models import Post, User, Group
+from .models import Post, User, Group, Follow
 from django.urls import reverse
-import time
+from django.core.cache import cache
 # После регистрации пользователя создается его персональная страница (profile)
 # Авторизованный пользователь может опубликовать пост (new)
 # Неавторизованный посетитель не может опубликовать пост (его редиректит на страницу входа)
@@ -10,6 +10,7 @@ import time
 # Авторизованный пользователь может отредактировать свой пост и его содержимое изменится на всех связанных страницах
 # Create your tests here.
 
+@override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.dummy.DummyCache',}})
 class ProjectTest(TestCase):
 
     def setUp(self):
@@ -34,7 +35,7 @@ class ProjectTest(TestCase):
         test_urls = ("/", f'/{self.user.username}/', f'/{self.user.username}/{self.post.pk}/')
         for url in test_urls:
             response = self.client.get(url)
-            self.assertContains(response, "Новый текст поста", count=1, html=False)  # страницы содержат текст поста
+            self.assertContains(response, "Новый текст поста", html=False)  # страницы содержат текст поста
 
     def edit_post(self):
         self.client.login(username="testemail", password="Test123456")
@@ -44,7 +45,7 @@ class ProjectTest(TestCase):
         test_urls = ("/", f'/{self.user.username}/', f'/{self.user.username}/{self.post.pk}/')
         for url in test_urls:
             response = self.client.get(url)
-            self.assertContains(response, "Измененный текст", count=1)
+            self.assertContains(response, "Измененный текст")
 
     def test_image(self):
         # проверяют страницу конкретной записи с картинкой: на странице есть тег <img>
@@ -55,7 +56,7 @@ class ProjectTest(TestCase):
         self.group = Group.objects.create(title="TestGroup", slug="testimage", description='desc')
         with open('C:/Users/1/Desktop/python/проекты_черновые/final_project/media/posts/image.jpg', 'rb') as fp:
             self.client.post("/new/", {"group": "1", 'text': 'Test post', 'image': fp})
-        urls = ["/", f"/{self.user.username}/", f'/{self.user.username}/1/', '/group/testimage/']
+        urls = ("/", f"/{self.user.username}/", f'/{self.user.username}/1/', '/group/testimage/')
         for url in urls:
             response = self.client.get(url)
             self.assertContains(response, '<img')
@@ -64,6 +65,23 @@ class ProjectTest(TestCase):
             self.client.post('/new/', {'group': '1','text': 'Test post', 'image': fp})
         response = self.client.get("/testemail/")
         self.assertEqual(response.context["my_posts"], 2) # создается только 1 пост
+
+        # Новая запись пользователя появляется в ленте тех, кто на него подписан и не появляется в ленте тех, кто не подписан на него.
+    def test_follow_post(self):
+        self.client.login(username="testemail", password="Test123456")
+        self.author = User.objects.create(username="author")
+        self.user = User.objects.get(username='testemail')
+        self.post = Post.objects.create(text="New text", author=self.author)
+        self.follow = Follow.objects.create(user=self.user, author=self.author)
+        response = self.client.get("/follow/") # посты избранных авторов
+        self.assertContains(response, "New text")
+
+    def test_unfollow_post(self):
+        self.client.login(username="testemail", password="Test123456")
+        self.author = User.objects.create(username="author")
+        self.post = Post.objects.create(text="New text", author=self.author)
+        response = self.client.get("/follow/")
+        self.assertNotContains(response, "New text")
 
 class EmailTest(TestCase):
     def setUp(self):
@@ -82,16 +100,17 @@ class ServerTest(ProjectTest):
         self.assertEqual(response.status_code, 404)
 
 class CacheTest(TestCase):
+
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="TestUser", email="mail@mail.ru", password="Zxc123")
         self.client.login(username='TestUser', password='Zxc123')
-    
+
     def test_cache_index(self):
         self.client.get("/") # создается cached_page
         self.post = Post.objects.create(text="Test post", author=self.user) # новый пост
         response = self.client.get("/") # без нового поста
         self.assertNotContains(response, "Test post")
-        time.sleep(20)
+        cache.clear()
         response = self.client.get("/")
         self.assertContains(response, "Test post")

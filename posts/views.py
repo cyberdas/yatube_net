@@ -110,9 +110,9 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     user = request.user
-    author = User.objects.get(username=username)
-    follow_check = Follow.objects.filter(user=user, author=author).count()
-    if follow_check == 0 and author.id != user.id:
+    author = get_object_or_404(User, username=username)
+    follow_check = Follow.objects.filter(user=user, author=author).exists()
+    if not follow_check and author != user:
         Follow.objects.create(user=request.user, author=author)
     return redirect("profile", username=username)
 
@@ -120,17 +120,17 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     user = request.user
-    author = User.objects.get(username=username)
-    follow_check = Follow.objects.filter(user=user, author=author).count()
-    if follow_check == 1:
+    author = get_object_or_404(User, username=username)
+    follow_check = Follow.objects.filter(user=user, author=author).exists()
+    if follow_check:
         Follow.objects.filter(user=user, author=author).delete()
     return redirect("profile", username=username)
 
 
 def page_not_found(request, exception=None):
-        # Переменная exception содержит отладочную информацию, 
-        # выводить её в шаблон пользователской страницы 404 мы не станем
-        return render(request, "misc/404.html", {"path": request.path}, status=404)
+    # Переменная exception содержит отладочную информацию, 
+    # выводить её в шаблон пользователской страницы 404 мы не станем
+    return render(request, "misc/404.html", {"path": request.path}, status=404)
 
 def server_error(request):
-        return render(request, "misc/500.html", status=500)
+    return render(request, "misc/500.html", status=500)
