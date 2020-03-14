@@ -39,4 +39,4 @@ class Follow(models.Model):
         return self.user.username  # профиль пользователя
 
     class Meta:
-        unique_together = (('user', 'author'), )
+        unique_together = (('user', 'author'), ) 
