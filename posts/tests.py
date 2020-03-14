@@ -10,7 +10,7 @@ from django.core.cache import cache
 # Авторизованный пользователь может отредактировать свой пост и его содержимое изменится на всех связанных страницах
 # Create your tests here.
 
-@override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.dummy.DummyCache',}})
+@override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.dummy.DummyCache',}}) # disable cache
 class ProjectTest(TestCase):
 
     def setUp(self):
@@ -29,13 +29,13 @@ class ProjectTest(TestCase):
 
     def test_user(self):
         self.client.login(username="testemail", password="Test123456")
-        self.client.post(reverse("new_post"), {"text": "Новый текст поста"}, follow=True) # публикуем пост
+        self.client.post("/new/", {"text": "Новый текст поста"}, follow=True) # публикуем пост
         self.user = User.objects.get(username='testemail')
         self.post = Post.objects.get(author=self.user)
         test_urls = ("/", f'/{self.user.username}/', f'/{self.user.username}/{self.post.pk}/')
         for url in test_urls:
             response = self.client.get(url)
-            self.assertContains(response, "Новый текст поста", html=False)  # страницы содержат текст поста
+            self.assertContains(response, "Новый текст поста", count=1)  # страницы содержат текст поста
 
     def edit_post(self):
         self.client.login(username="testemail", password="Test123456")
@@ -47,10 +47,7 @@ class ProjectTest(TestCase):
             response = self.client.get(url)
             self.assertContains(response, "Измененный текст")
 
-    def test_image(self):
-        # проверяют страницу конкретной записи с картинкой: на странице есть тег <img>
-        # проверяют, что на главной странице, на странице профайла и на странице группы пост с картинкой отображается корректно, с тегом <img>
-        # проверяют, что срабатывает защита от загрузки файлов не-графических форматов
+    def test_image(self): # ruin test_user
         self.client.login(username="testemail", password="Test123456")
         self.user = User.objects.get(username='testemail')
         self.group = Group.objects.create(title="TestGroup", slug="testimage", description='desc')
@@ -60,11 +57,10 @@ class ProjectTest(TestCase):
         for url in urls:
             response = self.client.get(url)
             self.assertContains(response, '<img')
-
         with open('C:/Users/1/Desktop/python/Команднаястрока.rtf', 'rb') as fp:
             self.client.post('/new/', {'group': '1','text': 'Test post', 'image': fp})
         response = self.client.get("/testemail/")
-        self.assertEqual(response.context["my_posts"], 2) # создается только 1 пост
+        self.assertNotEqual(response.context["my_posts"], 2) # создается только 1 пост
 
         # Новая запись пользователя появляется в ленте тех, кто на него подписан и не появляется в ленте тех, кто не подписан на него.
     def test_follow_post(self):

@@ -96,11 +96,7 @@ def add_comment(request, username, post_id):
 
 @login_required
 def follow_index(request):
-    followed = Follow.objects.filter(user=request.user) # на каких авторов подписан пользователь
-    authors = []
-    for author in followed:
-        authors.append(author.author.id) # экземляр модели User (= User.id)
-    posts = Post.objects.filter(author__in=authors).order_by("-pub_date")
+    posts = Post.objects.filter(author__following__user=request.user).order_by("-pub_date")
     paginator = Paginator(posts, 10)
     page_number = request.GET.get("page")
     page = paginator.get_page(page_number)
