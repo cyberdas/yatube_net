@@ -42,7 +42,5 @@ urlpatterns = [
 # Теперь страницы с адресами /about-us и /terms будут обрабатываться view-функцией flatpage() приложения flatpages.
 # {'url': '/about-us/'} и {'url': '/license/'} — это параметры, которые path() передаёт в вызываемую view-функцию. Это даёт нам свободу: например, мы можем обработать URL
 if settings.DEBUG:
-    import debug_toolbar
-    urlpatterns += (path("__debug__/", include(debug_toolbar.urls)),)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
