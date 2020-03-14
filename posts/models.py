@@ -17,7 +17,7 @@ class Post(models.Model): # класс Post, наследник класса Mod
     pub_date = models.DateTimeField("date published", auto_now_add=True) # поля в интерфейсе администратора. auto_now_add говорит, что при создании новой записи автоматически будет подставлено текущее время и дата 
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="post_author")
     group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True, null=True, related_name="posts")
-    image = models.ImageField(upload_to="posts", blank=True, null=True)
+    image = models.ImageField(upload_to="posts/", blank=True, null=True)
 
     def __str__(self): # выводим текст поста  
         return self.text 
