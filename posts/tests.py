@@ -3,14 +3,9 @@ from django.core import mail
 from .models import Post, User, Group, Follow
 from django.urls import reverse
 from django.core.cache import cache
-# После регистрации пользователя создается его персональная страница (profile)
-# Авторизованный пользователь может опубликовать пост (new)
-# Неавторизованный посетитель не может опубликовать пост (его редиректит на страницу входа)
-# После публикации поста новая запись появляется на главной странице сайта (index), на персональной странице пользователя (profile), и на отдельной странице поста (post)
-# Авторизованный пользователь может отредактировать свой пост и его содержимое изменится на всех связанных страницах
-# Create your tests here.
 
-@override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.dummy.DummyCache',}}) # disable cache
+
+@override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.dummy.DummyCache',}})
 class ProjectTest(TestCase):
 
     def setUp(self):
@@ -18,24 +13,24 @@ class ProjectTest(TestCase):
         self.user = {"username": "testemail", "password1": "Test123456", "password2": "Test123456", "email": "noodles00777@gmail.com"}
         response = self.client.post(
             reverse("signup"), self.user, follow=True
-        ) # регистрация
+        )
         self.assertRedirects(response, "/auth/login/", status_code=302, target_status_code=200)
         response = self.client.post("auth/login/", {"username": "testemail", "password": "Test123456"}, follow=True)
 
-    def test_logout(self): # неавторизованный пользователь не может опубликовать пост
+    def test_logout(self):
         self.client.logout()
         response = self.client.get("/new/", follow=True)
         self.assertRedirects(response, "/auth/login/?next=/new/", status_code=302, target_status_code=200) 
 
     def test_user(self):
         self.client.login(username="testemail", password="Test123456")
-        self.client.post("/new/", {"text": "Новый текст поста"}, follow=True) # публикуем пост
+        self.client.post("/new/", {"text": "Новый текст поста"}, follow=True)
         self.user = User.objects.get(username='testemail')
         self.post = Post.objects.get(author=self.user)
         test_urls = ("/", f'/{self.user.username}/', f'/{self.user.username}/{self.post.pk}/')
         for url in test_urls:
             response = self.client.get(url)
-            self.assertContains(response, "Новый текст поста", count=1)  # страницы содержат текст поста
+            self.assertContains(response, "Новый текст поста", count=1)
 
     def edit_post(self):
         self.client.login(username="testemail", password="Test123456")
@@ -47,7 +42,7 @@ class ProjectTest(TestCase):
             response = self.client.get(url)
             self.assertContains(response, "Измененный текст")
 
-    def test_image(self): # ruin test_user
+    def test_image(self):
         self.client.login(username="testemail", password="Test123456")
         self.user = User.objects.get(username='testemail')
         self.group = Group.objects.create(title="TestGroup", slug="testimage", description='desc')
@@ -60,16 +55,16 @@ class ProjectTest(TestCase):
         with open('C:/Users/1/Desktop/python/Команднаястрока.rtf', 'rb') as fp:
             self.client.post('/new/', {'group': '1','text': 'Test post', 'image': fp})
         response = self.client.get("/testemail/")
-        self.assertNotEqual(response.context["my_posts"], 2) # создается только 1 пост
+        self.assertNotEqual(response.context["my_posts"], 2)
 
-        # Новая запись пользователя появляется в ленте тех, кто на него подписан и не появляется в ленте тех, кто не подписан на него.
+
     def test_follow_post(self):
         self.client.login(username="testemail", password="Test123456")
         self.author = User.objects.create(username="author")
         self.user = User.objects.get(username='testemail')
         self.post = Post.objects.create(text="New text", author=self.author)
         self.follow = Follow.objects.create(user=self.user, author=self.author)
-        response = self.client.get("/follow/") # посты избранных авторов
+        response = self.client.get("/follow/")
         self.assertContains(response, "New text")
 
     def test_unfollow_post(self):
@@ -85,15 +80,17 @@ class EmailTest(TestCase):
         user = {"username": "testemail", "password1": "Test123456", "password2": "Test123456", "email": "noodles00777@gmail.com"}
         self.client.post("/auth/signup/", user, follow=True)
 
-    def test_send_email(self): 
-        self.assertEqual(len(mail.outbox), 1) # Проверяем, что письмо лежит в исходящих
-        self.assertEqual(mail.outbox[0].subject, 'Подтверждение регистрации Yatube') # Проверяем, что тема первого письма правильная.
+    def test_send_email(self):
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, 'Подтверждение регистрации Yatube')
+
 
 class ServerTest(ProjectTest):
 
     def test_error_404(self):
         response = self.client.get('/404/')
         self.assertEqual(response.status_code, 404)
+
 
 class CacheTest(TestCase):
 
@@ -103,9 +100,9 @@ class CacheTest(TestCase):
         self.client.login(username='TestUser', password='Zxc123')
 
     def test_cache_index(self):
-        self.client.get("/") # создается cached_page
-        self.post = Post.objects.create(text="Test post", author=self.user) # новый пост
-        response = self.client.get("/") # без нового поста
+        self.client.get("/")
+        self.post = Post.objects.create(text="Test post", author=self.user)
+        response = self.client.get("/")
         self.assertNotContains(response, "Test post")
         cache.clear()
         response = self.client.get("/")
