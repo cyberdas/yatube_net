@@ -1,8 +1,7 @@
 from django.shortcuts import render
 from django.core.mail import send_mail
-# позволяет узнать ссылку на URL по его имени, параметр name функции path
 from django.urls import reverse_lazy
-from django.views.generic import CreateView # CreateView берёт на себя всю работу по отрисовке формы
+from django.views.generic import CreateView
 
 from .forms import CreationForm
 
@@ -19,4 +18,4 @@ class SignUp(CreateView):
 
     
 def send_mail_ls(email):
-    send_mail('Подтверждение регистрации Yatube', 'Вы зарегистрированы!', 'Yatube.ru <admin@yatube.ru>',[email], fail_silently=False) # выводить описание ошибок
+    send_mail('Подтверждение регистрации Yatube', 'Вы зарегистрированы!', 'Yatube.ru <admin@yatube.ru>',[email], fail_silently=False)
